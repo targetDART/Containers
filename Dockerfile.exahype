@@ -1,0 +1,33 @@
+FROM targetdart/runtime
+
+ENV PEANO_SRC_ROOT_DIR=/opt/exahype \
+    PEANO_CMAKE_BUILD_DIR=/opt/exahype
+
+RUN git clone https://gitlab.lrz.de/hpcsoftware/Peano.git -b 2025targetDARTSC /Peano
+
+# Set -DWITH_TARGETDART=ON to enable support for targetDART
+RUN . /entrypoint.sh && \
+    cd /Peano && mkdir build && cd build && \
+    CC=clang CXX=clang++ cmake .. \
+      -DCMAKE_INSTALL_PREFIX=/opt/exahype \
+      -DCMAKE_CXX_STANDARD=17 \
+      -DENABLE_BLOCKSTRUCTURED=ON \
+      -DENABLE_LOADBALANCING=ON \
+      -DENABLE_EXAHYPE=ON \
+      -DWITH_NETCDF=ON \
+      -DWITH_MPI=ON \
+      -DWITH_MULTITHREADING=omp \
+      -DWITH_GPU=omp \
+      -DWITH_GPU_ARCH=sm_90 \
+      -DWITH_TARGETDART=OFF && \
+    make -j$(nproc --all) && make install && \
+    pip install /Peano && \
+    cp -r /Peano/applications/exahype2/shallow-water /exahype && \
+    cd / && rm -rf /Peano
+
+WORKDIR /exahype/tohoku-tsunami
+
+# Set --ntasks > 1 to offload GPU tasks asynchronously using targetDART
+RUN . /entrypoint.sh && python tohoku-tsunami.py -md 8 -ns 0 --trees 9 --ntasks 1
+
+ENTRYPOINT bash -c "source /entrypoint.sh && exec ./TohokuTsunami.Release"

@@ -1,0 +1,41 @@
+FROM targetdart/base AS builder
+
+RUN wget https://github.com/spack/spack/archive/refs/tags/v1.0.0-alpha.4.tar.gz -O /opt/spack.tar.gz && \
+mkdir -p /opt/spack && \
+tar -xzf /opt/spack.tar.gz -C /opt/spack --strip-components=1 && \
+rm /opt/spack.tar.gz
+RUN echo ". /opt/spack/share/spack/setup-env.sh" >> /etc/bash.bashrc
+
+WORKDIR /opt/spack-environment
+COPY spack.yaml spack.yaml
+
+RUN . /opt/spack/share/spack/setup-env.sh && \
+    spack compiler find && \
+    spack env activate . && \
+    spack external find && \
+    spack concretize && \
+    spack install --fail-fast && \
+    spack gc -y && \
+    spack clean -a
+
+RUN . /opt/spack/share/spack/setup-env.sh && spack env activate --sh -d . > activate.sh
+
+RUN { \
+      echo '#!/bin/sh' \
+      && echo '.' /opt/spack-environment/activate.sh \
+      && echo export LD_LIBRARY_PATH=/opt/views/view/lib/x86_64-unknown-linux-gnu:'$LD_LIBRARY_PATH' \
+      && echo 'exec "$@"'; \
+    } > /entrypoint.sh \
+&& chmod a+x /entrypoint.sh \
+&& ln -s /opt/views/view /opt/view
+
+FROM targetdart/base:latest
+
+COPY --from=builder /opt/spack-environment /opt/spack-environment
+COPY --from=builder /opt/software /opt/software
+COPY --from=builder /opt/views /opt/views
+COPY --from=builder /entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]
+

@@ -1,0 +1,90 @@
+FROM ubuntu:24.10
+
+ENV FORCE_UNSAFE_CONFIGURE=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
+    OMPI_ALLOW_RUN_AS_ROOT=1 \
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y --no-install-recommends --fix-missing \
+    software-properties-common \
+    apt-utils \
+    build-essential \
+    g++ \
+    gcc \
+    gfortran \
+    bash \
+    wget \
+    git \
+    git-lfs \
+    curl \
+    ssh \
+    subversion \
+    tar \
+    unzip \
+    patch \
+    gzip \
+    bzip2 \
+    file \
+    gnupg \
+    coreutils \
+    mercurial \
+    nano \
+    pkg-config \
+    tree \
+    flex \
+    automake \
+    make \
+    cmake \
+    cmake-curses-gui \
+    ccache \
+    cppcheck \
+    libtool \
+    clang-tidy \
+    clang-format \
+    gcovr \
+    vim \
+    less \
+    gdb \
+    strace \
+    linux-tools-common \
+    linux-tools-generic \
+    valgrind \
+    unifdef \
+    ninja-build \
+    meson \
+    graphviz \
+    xorg-dev \
+    htop \
+    btop \
+    nvtop \
+    mesa-utils \
+    mesa-common-dev \
+    ca-certificates \
+    libxml2-dev \
+    libbz2-dev \
+    libxslt1-dev \
+    libelf-dev \
+    libsimde-dev \
+    libudev-dev \
+    libsystemd-dev \
+    libcurl4-openssl-dev \
+    libgsl-dev \
+    nodejs \
+    libnuma-dev \
+    libnuma1 \
+    zlib1g \
+    zlib1g-dev && \
+    apt-get clean -y && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget https://www.doxygen.nl/files/doxygen-1.10.0.linux.bin.tar.gz && \
+    gunzip doxygen-1.10.0.linux.bin.tar.gz && \
+    tar xf doxygen-1.10.0.linux.bin.tar && \
+    cd doxygen-1.10.0/ && \
+    make install && \
+    rm -rf /doxygen-1.10.0.linux.bin.tar
+
+CMD ["/bin/bash"]
